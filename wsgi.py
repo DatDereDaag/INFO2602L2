@@ -76,8 +76,57 @@ def delete_user(username):
 @app.cli.command('get-todos')
 @click.argument('username', default='bob')
 def get_user_todos(username):
-  bob = User.query.filter_by(username=username).first()
-  if not bob:
+  user = User.query.filter_by(username=username).first()
+  if not user:
       print(f'{username} not found!')
       return
-  print(bob.todos)
+  for todo in user.todos:
+    print(todo)
+
+@app.cli.command('add-todo')
+@click.argument('username', default = 'bob')
+@click.argument('text', default = 'wash car')
+def add_task(username, text):
+  user = User.query.filter_by(username = username).first()
+  if not user:
+    print(f'User {username} not found')
+    return
+  new_todo = Todo(text)
+  user.todos.append(new_todo)
+  db.session.add(new_todo)
+  db.session.commit()
+  print(f'Task {new_todo} added to {user}')
+
+@app.cli.command('toggle-todo')
+@click.argument('username', default = 'bob')
+@click.argument('id', default = 1)
+def toggle_todo(id, username):
+  user = User.query.filter_by(username = username).first()
+  if not user:
+    print(f'User {username} not found')
+    return
+  
+  todo = Todo.query.filter_by(id = id, user_id = user.id).first()
+  if not todo:
+    print(f'{username} has no todo id {id}')
+    return
+  
+  todo.toggle()
+  print(f'{todo.text} is done')
+
+@click.argument('username', default='bob')
+@click.argument('todo_id', default=1)
+@click.argument('category', default='chores')
+@app.cli.command('add-category', help="Adds a category to a todo")
+def add_todo_category_command(username, todo_id, category):
+  user = User.query.filter_by(username=username).first()
+  if not user:
+    print(f'{username} not found!')
+    return
+
+  res = user.add_todo_category(todo_id, category)
+  if not res:
+    print(f'{username} has no todo id {todo_id}')
+    return
+
+  print('Category added!')
